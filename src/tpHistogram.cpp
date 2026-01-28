@@ -5,47 +5,6 @@
 using namespace cv;
 using namespace std;
 
-std::string type2str(int type)
-{
-    std::string r;
-
-    uchar depth = type & CV_MAT_DEPTH_MASK;
-    uchar chans = 1 + (type >> CV_CN_SHIFT);
-
-    switch (depth)
-    {
-    case CV_8U:
-        r = "CV_8U";
-        break;
-    case CV_8S:
-        r = "CV_8S";
-        break;
-    case CV_16U:
-        r = "CV_16U";
-        break;
-    case CV_16S:
-        r = "CV_16S";
-        break;
-    case CV_32S:
-        r = "CV_32S";
-        break;
-    case CV_32F:
-        r = "CV_32F";
-        break;
-    case CV_64F:
-        r = "CV_64F";
-        break;
-    default:
-        r = "Unknown";
-        break;
-    }
-
-    r += "C";
-    r += std::to_string(chans);
-
-    return r;
-}
-
 /**
     Inverse a grayscale image with float values.
     for all pixel p: res(p) = 1.0 - image(p)
@@ -58,6 +17,14 @@ Mat inverse(Mat image)
               YOUR CODE HERE
     *********************************************/
 
+    for (int y = 0; y < res.rows; y++)
+    {
+        float *row = res.ptr<float>(y);
+        for (int x = 0; x < res.cols; x++)
+        {
+            row[x] = 1.0 - image.at<float>(y, x);
+        }
+    }
 
     /********************************************
                 END OF YOUR CODE
@@ -69,7 +36,7 @@ Mat inverse(Mat image)
     Thresholds a grayscale image with float values.
     for all pixel p: res(p) =
         | 0 if image(p) <= lowT
-        | image(p) if lowT < image(p) <= hightT
+        | image(p) if lowT < image(p) <= highT
         | 1 otherwise
 */
 Mat threshold(Mat image, float lowT, float highT)
@@ -79,7 +46,21 @@ Mat threshold(Mat image, float lowT, float highT)
     /********************************************
                 YOUR CODE HERE
     *********************************************/
-
+    for (int y = 0; y < res.rows; y++)
+    {
+        float *row = res.ptr<float>(y);
+        for (int x = 0; x < res.cols; x++)
+        {
+            if (row[x] <= lowT)
+            {
+                row[x] = 0.0;
+            }
+            else if (row[x] > highT)
+            {
+                row[x] = 1.0;
+            }
+        }
+    }
     /********************************************
                 END OF YOUR CODE
     *********************************************/
@@ -110,6 +91,16 @@ Mat quantize(Mat image, int numberOfLevels)
     /********************************************
                 YOUR CODE HERE
     *********************************************/
+   
+    for (int y = 0; y < res.rows; ++y)
+    {
+        float *row = res.ptr<float>(y);
+        for (int x = 0; x < res.cols; ++x)
+        {
+            int i = static_cast<int>(row[x] * numberOfLevels);
+            row[x] = i / float(numberOfLevels - 1);
+        }
+    }
 
     /********************************************
                 END OF YOUR CODE
@@ -128,6 +119,18 @@ Mat normalize(Mat image, float minValue, float maxValue)
     /********************************************
                 YOUR CODE HERE
     *********************************************/
+
+    double minVal, maxVal;
+    cv::minMaxLoc(res, &minVal, &maxVal);
+
+    for (int y = 0; y < res.rows; ++y)
+    {
+        float *row = res.ptr<float>(y);
+        for (int x = 0; x < res.cols; ++x)
+        {
+            row[x] = (row[x] - minVal) * (1.f / (maxVal - minVal));
+        }
+    }
 
     /********************************************
                 END OF YOUR CODE
