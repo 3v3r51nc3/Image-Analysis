@@ -154,7 +154,7 @@ Mat expand(Mat image, int factor, float (*interpolationFunction)(cv::Mat image, 
 */
 Mat rotate(Mat image, float angle, float (*interpolationFunction)(cv::Mat image, float y, float x))
 {
-    Mat res = Mat::zeros(1, 1, CV_32FC1);
+    //Mat res = Mat::zeros(1, 1, CV_32FC1);
     /********************************************
                 YOUR CODE HERE
     hint: to determine the size of the output, take
@@ -162,7 +162,41 @@ Mat rotate(Mat image, float angle, float (*interpolationFunction)(cv::Mat image,
     input image.
     *********************************************/
 
-    //TODO:
+    //NOTE: does not pass tests but looks right
+
+    float rad = -angle * CV_PI / 180.0f; //rotate clockwise
+    float c = cos(rad);
+    float s = sin(rad);
+
+    // calculate new size (bounding box)
+    // FIX: use ceil() to round UP so we don't loose the last pixel
+    int w = std::ceil(abs(image.cols * c) + abs(image.rows * s));
+    int h = std::ceil(abs(image.cols * s) + abs(image.rows * c));
+    
+    Mat res = Mat::zeros(h, w, CV_32FC1);
+
+    // centers of images
+    float cx = w / 2.0f;
+    float cy = h / 2.0f;
+    float ox = image.cols / 2.0f;
+    float oy = image.rows / 2.0f;
+
+    for (int y = 0; y < res.rows; y++)
+    {
+        float *row = res.ptr<float>(y);
+        for (int x = 0; x < res.cols; x++)
+        {
+            // inverse mapping coordinates
+            float src_x = (x - cx) * c - (y - cy) * s + ox;
+            float src_y = (x - cx) * s + (y - cy) * c + oy;
+
+            // Only interpolate if inside original image
+            if (src_x >= 0 && src_x < image.cols && src_y >= 0 && src_y < image.rows)
+            {
+                row[x] = interpolationFunction(image, src_y, src_x);
+            }
+        }
+    }
 
     /********************************************
                 END OF YOUR CODE
