@@ -91,7 +91,7 @@ Mat quantize(Mat image, int numberOfLevels)
     /********************************************
                 YOUR CODE HERE
     *********************************************/
-   
+
     for (int y = 0; y < res.rows; ++y)
     {
         float *row = res.ptr<float>(y);
@@ -150,6 +150,40 @@ Mat equalize(Mat image)
     /********************************************
                 YOUR CODE HERE
     *********************************************/
+   
+    const int histSize = 256;
+    vector<int> hist(histSize, 0);
+
+    // histogram
+    for (int y = 0; y < image.rows; ++y)
+    {
+        const uchar *row = image.ptr<uchar>(y);
+        for (int x = 0; x < image.cols; ++x)
+        {
+            hist[row[x]]++;
+        }
+    }
+
+    // cumulative histogram (CDF)
+    vector<double> cdf(histSize, 0.0);
+    cdf[0] = hist[0];
+    for (int i = 1; i < histSize; ++i)
+    {
+        cdf[i] = cdf[i - 1] + hist[i];
+    }
+
+    double totalPixels = image.rows * image.cols;
+
+    // mapping
+    for (int y = 0; y < res.rows; ++y)
+    {
+        uchar *row = res.ptr<uchar>(y);
+        for (int x = 0; x < res.cols; ++x)
+        {
+            int val = row[x];
+            row[x] = static_cast<uchar>(std::round(cdf[val] / totalPixels * 255.0));
+        }
+    }
 
     /********************************************
                 END OF YOUR CODE
@@ -167,6 +201,72 @@ Mat thresholdOtsu(Mat image)
     /********************************************
                 YOUR CODE HERE
     *********************************************/
+
+    const int histSize = 256;
+    vector<int> hist(histSize, 0);
+
+    // histogram
+    for (int y = 0; y < image.rows; ++y)
+    {
+        const uchar *row = image.ptr<uchar>(y);
+        for (int x = 0; x < image.cols; ++x)
+        {
+            hist[row[x]]++;
+        }
+    }
+
+    int total = image.rows * image.cols;
+
+    // global mean
+    double sum = 0.0;
+    for (int i = 0; i < histSize; ++i)
+    {
+        sum += i * hist[i];
+    }
+
+    double sumB = 0.0;
+    int wB = 0;
+    int wF = 0;
+
+    double maxVar = 0.0;
+    int bestT = 0;
+
+    for (int t = 0; t < histSize; ++t)
+    {
+        wB += hist[t];
+        if (wB == 0)
+            continue;
+
+        wF = total - wB;
+        if (wF == 0)
+            break;
+
+        sumB += t * hist[t];
+
+        double mB = sumB / wB;
+        double mF = (sum - sumB) / wF;
+
+        double varBetween = (double)wB * (double)wF * (mB - mF) * (mB - mF);
+
+        if (varBetween > maxVar)
+        {
+            maxVar = varBetween;
+            bestT = t;
+        }
+    }
+
+    // apply threshold
+    for (int y = 0; y < res.rows; ++y)
+    {
+        uchar *row = res.ptr<uchar>(y);
+        for (int x = 0; x < res.cols; ++x)
+        {
+            if (row[x] <= bestT)
+                row[x] = 0;
+            else
+                row[x] = 255;
+        }
+    }
 
     /********************************************
                 END OF YOUR CODE
