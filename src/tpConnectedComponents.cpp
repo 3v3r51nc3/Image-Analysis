@@ -10,67 +10,6 @@ using namespace cv;
 using namespace std;
 
 /**
-    Utility: test if pixel is foreground (non-zero), for common single-channel types.
-    This avoids assuming CV_8U in the tests.
-*/
-static inline bool isForeground(Mat image, int y, int x)
-{
-    switch (image.depth())
-    {
-    case CV_8U:
-        return image.at<uchar>(y, x) != 0;
-    case CV_8S:
-        return image.at<schar>(y, x) != 0;
-    case CV_16U:
-        return image.at<ushort>(y, x) != 0;
-    case CV_16S:
-        return image.at<short>(y, x) != 0;
-    case CV_32S:
-        return image.at<int>(y, x) != 0;
-    case CV_32F:
-        return image.at<float>(y, x) != 0.0f;
-    case CV_64F:
-        return image.at<double>(y, x) != 0.0;
-    default:
-        CV_Error(Error::StsUnsupportedFormat, "Unsupported image depth");
-    }
-    return false;
-}
-
-/**
-    Utility: copy one pixel from src to dst for the same (single-channel) type.
-*/
-static inline void copyPixel(Mat src, Mat dst, int y, int x)
-{
-    switch (src.depth())
-    {
-    case CV_8U:
-        dst.at<uchar>(y, x) = src.at<uchar>(y, x);
-        break;
-    case CV_8S:
-        dst.at<schar>(y, x) = src.at<schar>(y, x);
-        break;
-    case CV_16U:
-        dst.at<ushort>(y, x) = src.at<ushort>(y, x);
-        break;
-    case CV_16S:
-        dst.at<short>(y, x) = src.at<short>(y, x);
-        break;
-    case CV_32S:
-        dst.at<int>(y, x) = src.at<int>(y, x);
-        break;
-    case CV_32F:
-        dst.at<float>(y, x) = src.at<float>(y, x);
-        break;
-    case CV_64F:
-        dst.at<double>(y, x) = src.at<double>(y, x);
-        break;
-    default:
-        CV_Error(Error::StsUnsupportedFormat, "Unsupported image depth");
-    }
-}
-
-/**
     Performs a labeling of image connected component with 4 connectivity
     with a depth-first exploration.
     Any non zero pixel of the image is considered as present.
@@ -91,12 +30,13 @@ cv::Mat ccLabel(cv::Mat image)
     // raster scan
     for (int y = 0; y < image.rows; y++)
     {
+        const float *imgRow = image.ptr<float>(y);
         int *resRow = res.ptr<int>(y);
 
         for (int x = 0; x < image.cols; x++)
         {
             // background or already labeled
-            if (!isForeground(image, y, x) || resRow[x] != 0)
+            if (imgRow[x] == 0.0f || resRow[x] != 0)
                 continue;
 
             // new component
@@ -118,7 +58,7 @@ cv::Mat ccLabel(cv::Mat image)
                     if (v.x < 0 || v.y < 0 || v.x >= image.cols || v.y >= image.rows)
                         continue;
 
-                    if (res.at<int>(v.y, v.x) == 0 && isForeground(image, v.y, v.x))
+                    if (res.at<int>(v.y, v.x) == 0 && image.at<float>(v.y, v.x) != 0.0f)
                     {
                         res.at<int>(v.y, v.x) = currentLabel;
                         stack.push_back(v);
@@ -165,11 +105,14 @@ cv::Mat ccAreaFilter(cv::Mat image, int size)
     for (int y = 0; y < labels.rows; ++y)
     {
         const int *lrow = labels.ptr<int>(y);
+        const float *irow = image.ptr<float>(y);
+        float *rrow = res.ptr<float>(y);
+
         for (int x = 0; x < labels.cols; ++x)
         {
             int label = lrow[x];
             if (label > 0 && areas[label] >= size)
-                copyPixel(image, res, y, x);
+                rrow[x] = irow[x];
         }
     }
 
@@ -225,9 +168,11 @@ cv::Mat ccTwoPassLabel(cv::Mat image)
     // first pass
     for (int y = 0; y < image.rows; ++y)
     {
+        const float* imgRow = image.ptr<float>(y);
+
         for (int x = 0; x < image.cols; ++x)
         {
-            if (!isForeground(image, y, x))
+            if (imgRow[x] == 0.0f)
                 continue;
 
             int left = (x > 0) ? res.at<int>(y, x - 1) : 0;

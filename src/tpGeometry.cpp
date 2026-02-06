@@ -154,7 +154,7 @@ Mat expand(Mat image, int factor, float (*interpolationFunction)(cv::Mat image, 
 */
 Mat rotate(Mat image, float angle, float (*interpolationFunction)(cv::Mat image, float y, float x))
 {
-    //Mat res = Mat::zeros(1, 1, CV_32FC1);
+    // Mat res = Mat::zeros(1, 1, CV_32FC1);
     /********************************************
                 YOUR CODE HERE
     hint: to determine the size of the output, take
@@ -162,9 +162,9 @@ Mat rotate(Mat image, float angle, float (*interpolationFunction)(cv::Mat image,
     input image.
     *********************************************/
 
-    //NOTE: does not pass tests but looks right
+    // NOTE: does not pass tests but looks right
 
-    float rad = -angle * CV_PI / 180.0f; //rotate clockwise
+    float rad = -angle * CV_PI / 180.0f; // rotate clockwise
     float c = cos(rad);
     float s = sin(rad);
 
@@ -172,7 +172,7 @@ Mat rotate(Mat image, float angle, float (*interpolationFunction)(cv::Mat image,
     // FIX: use ceil() to round UP so we don't loose the last pixel
     int w = std::ceil(abs(image.cols * c) + abs(image.rows * s));
     int h = std::ceil(abs(image.cols * s) + abs(image.rows * c));
-    
+
     Mat res = Mat::zeros(h, w, CV_32FC1);
 
     // centers of images
