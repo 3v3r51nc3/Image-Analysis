@@ -56,7 +56,7 @@ bin/dilate
 bin/open
 bin/close
 bin/morphologicalGradient
-
+bin/figures
 bin/test
 
 bin/out.png
